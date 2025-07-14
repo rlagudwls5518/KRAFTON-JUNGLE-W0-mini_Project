@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>정글 VS Jungle - 게시글 작성 </title>
+
+  <style>
+    /* 전체 페이지 폰트/여백/배경 */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+
+    /* 각 영역(게시글 작성/목록/검색/인기글) 가운데 정렬, 폭 제한 */
+    .write-section, #post-list-section, .search-section, #popular-section {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* 게시글 작성 폼 디자인 */
+    .write-section {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    /* 사용자 프로필(이미지, 닉네임) 스타일 */
+    .profile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 20px;
+      cursor: pointer;
+    }
+    .profile img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #ccc;}
+
+    /* 입력창 스타일 */
+    .inputs { display: flex; align-items: center; gap: 10px; flex-grow: 1;}
+    .inputs input { width: 40%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;}
+    .vs-text { font-weight: bold; font-size: 18px;}
+    .write-button { padding: 10px 20px; background-color: #48a868; color: white; border: none; border-radius: 5px; cursor: pointer; white-space: nowrap; font-size: 18px; min-width: 70px; min-height: 40px;}
+
+    /* 게시글 카드(목록) 스타일 */
+    .post-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; display: flex; align-items: flex-start; gap: 15px; position: relative;}
+    .post-profile { display: flex; flex-direction: column; align-items: center; min-width: 80px;}
+    .post-profile img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #ccc; cursor: pointer;}
+    .post-profile .nickname { font-size: 12px; margin-top: 5px; text-align: center; cursor: pointer;}
+    .post-content { flex-grow: 1;}
+
+    /* 투표 버튼, 결과, 바 */
+    .vote-buttons { margin-top: 8px;}
+    .vote-buttons button { padding: 6px 12px; margin-right: 8px; border: none; border-radius: 4px; cursor: pointer; background-color: #48a868; color: #fff; font-size: 14px;}
+    .vote-buttons button:disabled { background-color: #ccc; cursor: not-allowed;}
+    .vote-buttons button.selected { background-color: #2d5a3d;}
+    .vote-bar { height: 16px; background-color: #eee; border-radius: 8px; overflow: hidden; margin-top: 4px; width: 100%;}
+    .bar-fill { height: 100%; background-color: #48a868; text-align: right; padding-right: 5px; color: #000; font-weight: bold; font-size: 13px; line-height: 16px; background-image: linear-gradient(90deg, #76c7a3, #48a868);}
+    .vote-result-label { font-size: 14px; margin-top: 5px; margin-bottom: 5px; font-weight: bold; color: #333;}
+
+    /* 좋아요 영역 */
+    .like-section { margin-top: 10px; display: flex; align-items: center;}
+    .like-button { background: none; border: none; font-size: 20px; cursor: pointer;}
+    .like-count { color: red; font-weight: bold; margin-left: 5px;}
+
+    /* 게시글 삭제 버튼 등(오른쪽 위) */
+    .post-actions { position: absolute; top: 8px; right: 8px;}
+    .post-actions button { margin-left: 5px; padding: 4px 8px; font-size: 12px; cursor: pointer; border: none; border-radius: 4px; background: #eee;}
+    .post-actions button:hover { background: #ddd;}
+
+    /* 모달(프로필) */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;}
+    .modal-content { background: white; padding: 20px; border-radius: 10px; width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);}
+    .vote-list-scroll { max-height: 250px; overflow-y: auto; padding-right: 8px; margin-top: 10px; border: 1px solid #eee; border-radius: 6px;}
+    .vote-list-scroll::-webkit-scrollbar { width: 6px;}
+    .vote-list-scroll::-webkit-scrollbar-thumb { background-color: #aaa; border-radius: 3px;}
+    .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;}
+    .close:hover { color: black;}
+
+    /* 검색, 인기글, 로그아웃 버튼 등 */
+    .search-section { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;}
+    #popular-section { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;}
+    .popular-card { background: #fff9e6; border-left: 4px solid #d4a853; padding: 12px; margin-bottom: 10px; border-radius: 4px;}
+    .vote-history-card { border: 1px solid #ddd; border-radius: 10px; background: #fff; padding: 12px 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);}
+    .vote-history-content { display: flex; justify-content: space-between; align-items: center;}
+    .vote-history-content .option { padding: 10px; border-radius: 8px; flex: 1; text-align: center; background: #f3f3f3; margin: 0 8px; font-weight: bold; color: #555; transition: all 0.2s ease;}
+    .vote-history-content .option.selected { background: #4caf50; color: white; transform: scale(1.05);}
+    .vote-history-content .vs { color: #999; font-size: 14px;}
+    .logout-btn { position: absolute; top: 30px; right: 35px; padding: 8px 18px; background: #48a868; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 10;}
+  </style>
+</head>
+
+<body>
+
+  <!-- [헤더] 서비스명과 로그아웃 버튼 -->
+  <div style="max-width:800px; margin:40px auto 20px auto; display:flex; align-items:center; justify-content:space-between;">
+    <div style="flex:1; text-align:center;">
+      <h1 style="margin:0; font-size:32px; color:#2d2d2d;">정글 VS Jungle</h1>
+    </div>
+    <div style="flex-shrink:0;">
+      <button onclick="logout()" class="logout-btn">
+        로그아웃
+      </button>
+    </div>
+  </div>
+
+  <!-- [플래시 메세지] 알림(경고, 안내) -->
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <script>
+      alert("{{ messages[0] }}");
+    </script>
+  {% endif %}
+  {% endwith %}
+
+  <!-- [게시글 작성 폼] 선택지 2개, 익명체크 -->
+  <form action="{{ url_for('board_page') }}" method="POST" style="display: flex; align-items: center;" class="write-section">
+    <div class="profile" onclick="openProfileModal(currentUser ? currentUser._id : null)">
+      <img id="user-profile-img" src="/static/default-profile.png" alt="프로필 이미지" />
+      <span id="nickname-display">{{ session.get('username') }}</span>
+    </div>
+    <div class="inputs">
+      <input type="text" name="option1" id="option1" placeholder="첫 번째 선택지" required />
+      <span class="vs-text">VS</span>
+      <input type="text" name="option2" id="option2" placeholder="두 번째 선택지" required />
+      <button type="submit" class="write-button" style="margin-left: 10px;">작성</button>
+    </div>
+    <!-- ⭐ 변경: 익명 체크박스 & 위치 이동 (B Only) -->
+    <div style="margin-top: 8px; text-align: right;">
+      <label style="font-size: 13px;">
+        <input type="checkbox" name="is_anonymous" value="1" style="vertical-align: middle; margin-right: 2px;" />
+        익명
+      </label>
+    </div>
+  </form>
+
+  <!-- [검색 영역] 선택지, 작성자명, 전체 등으로 게시글 필터 -->
+  <div class="search-section">
+    <form method="get" action="{{ url_for('board_page') }}" style="display: flex; gap: 10px; align-items: center;">
+      <select name="type" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <option value="all" {% if search_type=='all' %}selected{% endif %}>전체</option>
+        <option value="option1" {% if search_type=='option1' %}selected{% endif %}>선택지1</option>
+        <option value="option2" {% if search_type=='option2' %}selected{% endif %}>선택지2</option>
+        <option value="writer" {% if search_type=='writer' %}selected{% endif %}>작성자</option>
+      </select>
+      <input type="text" name="query" value="{{ search_query or '' }}" placeholder="검색어를 입력하세요" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
+      <button type="submit" style="padding: 8px 16px; background: #48a868; color: white; border: none; border-radius: 4px; cursor: pointer;">검색</button>
+      <a href="{{ url_for('board_page') }}">
+        <button type="button" style="padding: 8px 16px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">전체보기</button>
+      </a>
+
+      <!-- 좋아요 게시글 필터링 -->
+       <label style="margin-left:15px;">
+          <input type="checkbox" id="filterLiked"
+                 name="filterLiked" value="1"
+                 {% if request.args.get('filterLiked', '0') == '1' %}checked{% endif %}>
+          좋아요
+       </label>
+
+    </form>
+  </div>
+
+  <!-- [인기 게시물 영역] 좋아요 많은 1개만 카드로 보여줌 -->
+  <div id="popular-section">
+    <h3 style="margin-bottom: 15px; color: #d4a853;">🏆 인기 게시물</h3>
+    <div id="popular-container"></div>
+  </div>
+
+  <!-- [게시글 목록] 게시판 전체 글 리스트 출력 -->
+  <div id="post-list-section">
+    {% for post in cards %}
+    <div class="post-card">
+      <!-- ⭐ 익명 프로필/닉네임 분기 -->
+      <div class="post-profile">
+        {% if post.is_anonymous %}
+          <!-- 익명 프로필일 때 클릭 불가 -->
+          <img src="/static/default-profile.png" alt="기본 프로필" style="cursor:pointer;" onclick="openProfileModal('익명')" />
+          <p class="nickname" style="cursor:pointer;" onclick="openProfileModal('익명')">익명</p>
+        {% else %}
+          <img src="/profile_image/{{ post.writer_id }}" alt="프로필" onclick="openProfileModal('{{ post.writer_id }}')" />
+          <p class="nickname" onclick="openProfileModal('{{ post.writer_id }}')">{{ post.writer }}</p>
+        {% endif %}
+      </div>
+      <div class="post-content">
+        <!-- 게시글 선택지 표시 -->
+        <p><strong>{{ post.option1 }}</strong> VS <strong>{{ post.option2 }}</strong></p>
+        <!-- 작성일시 -->
+        <p style="font-size:12px;color:gray;">
+          {{ post.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+        </p>
+        <!-- 투표 버튼 -->
+        <div class="vote-buttons">
+          <button onclick="submitVote('{{ post._id }}', 1)">{{ post.option1 }} </button>
+          <button onclick="submitVote('{{ post._id }}', 2)">{{ post.option2 }} </button>
+        </div>
+        <!-- 투표 결과 시각화 -->
+        {% set total_votes = (post.result1 or 0) + (post.result2 or 0) %}
+        {% if total_votes > 0 %}
+        {% set percent1 = ((post.result1 or 0) / total_votes * 100) | round(1) %}
+        {% set percent2 = ((post.result2 or 0) / total_votes * 100) | round(1) %}
+        <div class="vote-result-label">{{ post.option1 }}: {{ percent1 }}% ({{ post.result1 }}명)</div>
+        <div class="vote-bar">
+          <div class="bar-fill" style="width: {{ percent1 }}%">{{ percent1 }}%</div>
+        </div>
+        <div class="vote-result-label">{{ post.option2 }}: {{ percent2 }}% ({{ post.result2 }}명)</div>
+        <div class="vote-bar">
+          <div class="bar-fill" style="width: {{ percent2 }}%">{{ percent2 }}%</div>
+        </div>
+        {% else %}
+        <p style="color: gray; margin-top: 10px;">아직 투표가 없습니다.</p>
+        {% endif %}
+        <!-- 좋아요(하트) -->
+        <div class="like-section">
+          <button onclick="toggleLike('{{ post._id }}')">❤️ {{ post.likes or 0 }}</button>
+        </div>
+        <!-- 댓글 펼치기 버튼 -->
+        <div style="text-align: center; margin-top: 10px;">
+          <button onclick="document.getElementById('details-{{ post._id }}').style.display = 'block'"
+            style="padding: 10px 20px; background-color: #ffffff; color: black; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            + 펼쳐보기
+          </button>
+        </div>
+        <!-- 💬 댓글 보기 영역 -->
+        <div id="details-{{ post._id }}"
+          style="display: none; margin-top: 15px; padding: 20px; background: #f0f9f4; border: 2px solid #b6e2c2; border-radius: 8px; max-height: 400px; overflow-y: auto;">
+          <h4 style="margin-bottom: 10px;">💬 댓글</h4>
+          <!-- 닫기 버튼 -->
+          <div style="text-align: right;">
+            <button onclick="document.getElementById('details-{{ post._id }}').style.display = 'none'"
+              style="border: none; background: none; font-size: 20px; cursor: pointer;">✖</button>
+          </div>
+          <div id="comments-{{ post._id }}">
+            {% if post.comments %}
+              {% for c in post.comments %}
+                <p><strong>
+                  {% if c.is_anonymous %}
+                    <span style="cursor: pointer;" onclick="openProfileModal('익명')">익명</span>
+                  {% else %}
+                    <span style="cursor: pointer;" onclick="openProfileModal('{{ c.writer_id }}')">{{ c.nickname }}</span>
+                  {% endif %}
+                </strong>: {{ c.content }}
+
+                <!-- 🔥 삭제 버튼 조건: writer_id가 현재 로그인한 user_id와 같을 때만 -->
+                {% if session.get('user_id') == c.writer_id %}
+                  <button onclick="deleteComment('{{ post._id }}', '{{ c._id }}')">삭제</button>
+                {% endif %}
+                </p>
+              {% endfor %}
+            {% else %}
+              <p style="color: gray;">댓글이 아직 없습니다.</p>
+            {% endif %}
+          </div>
+
+
+          <!-- 댓글 작성 입력창 (익명 체크포함) -->
+          <div style="margin-top: 15px;">
+            <input type="text" id="comment-input-{{ post._id }}" placeholder="댓글을 입력하세요"
+              style="width: 100%; padding: 10px; font-size: 14px; border-radius: 5px; border: 1px solid #ccc;">
+            <label style="margin-left: 8px;">
+              <!-- ⭐️댓글 익명 체크 박스 (B Only) -->
+              <input type="checkbox" id="comment-anon-{{ post._id }}" value="1" /> 익명
+            </label>
+            <button onclick="submitComment('{{ post._id }}')"
+              style="margin-top: 10px; padding: 8px 16px; background-color: #48a868; color: white; border: none; border-radius: 5px; cursor: pointer;">
+              댓글 등록
+            </button>
+          </div>
+        </div>
+        <!-- 본인만 삭제 가능 (user_id 체크) -->
+        {% if session.get('user_id') == post.writer_id %}
+          <div class="post-actions">
+            <button type="button" onclick="deletePost('{{ post._id }}')">삭제</button>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- [페이지네이션] 여러 페이지 게시글 이동 -->
+  <div style="text-align: center; margin-top: 20px;">
+    {% for p in range(1, total_pages + 1) %}
+    {% if p == page %}
+    <strong>[{{ p }}]</strong>
+    {% else %}
+    <a href="{{ url_for('board_page', page=p) }}">[{{ p }}]</a>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- [프로필 모달] 사용자 정보/최근투표 표시 모달 -->
+  <div id="profileModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeProfileModal()">&times;</span>
+      <h2>사용자 프로필</h2>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img id="modal-profile-img" src="/static/default-profile.png" alt="프로필" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid #ccc;">
+      </div>
+      <div id="modal-content">
+        <p><strong>별명:</strong> <span id="modal-nickname"></span></p>
+        <p><strong>나이:</strong> <span id="modal-age"></span></p>
+        <p><strong>소개:</strong> <span id="modal-intro"></span></p>
+        <hr />
+        <h4>📊 최근 투표한 게시물</h4>
+        <div id="modal-vote-list" class="vote-list-scroll"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [JS] 주요 기능 (투표, 좋아요, 댓글, 삭제, 모달 등) -->
+  <script>
+    // 토큰/유저 정보
+    const token = localStorage.getItem('access_token');
+    let currentUser = null;
+
+    // 새로고침(전체 글 다시 불러오기)
+    function fetchPosts() { window.location.reload(); }
+
+    // 로그인한 사용자 정보 로드
+    function loadCurrentUser() {
+      fetch('/user/me', { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(res => res.json())
+        .then(user => {
+          currentUser = user;
+          document.getElementById('nickname-display').textContent = user.nickname;
+          if (user.has_profile_image) document.getElementById('user-profile-img').src = `/profile_image/${user._id}`;
+        })
+        .catch(err => console.error('사용자 정보 로드 실패:', err));
+    }
+
+    // 프로필 모달 열기 (익명 예외처리)
+    function openProfileModal(userId = null) {
+      const myId = currentUser ? currentUser._id : null;
+      const targetUserId = userId || myId;
+      if (!targetUserId || targetUserId === "익명" || targetUserId === "" || targetUserId == null) {
+        alert("익명 사용자는 프로필 정보가 없습니다.");
+        return;
+      }
+      fetch(`/user/${targetUserId}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(res => res.json())
+        .then(user => {
+          document.getElementById('modal-nickname').textContent = user.nickname;
+          document.getElementById('modal-age').textContent = user.age || '비공개';
+          document.getElementById('modal-intro').textContent = user.intro || '소개 없음';
+          if (user.has_profile_image) document.getElementById('modal-profile-img').src = `/profile_image/${user._id}`;
+          else document.getElementById('modal-profile-img').src = '/static/default-profile.png';
+          document.getElementById('profileModal').style.display = 'flex';
+          // 최근 투표 카드형 표시
+          fetch(`/user/${targetUserId}/recent-votes`, { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(res => res.json())
+            .then(data => {
+              const list = document.getElementById('modal-vote-list');
+              list.innerHTML = '';
+              if (!data.votes || data.votes.length === 0) {
+                list.innerHTML = '<div style="padding:10px;">최근 투표한 게시물이 없습니다.</div>';
+                return;
+              }
+              data.votes.forEach(v => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'vote-history-card';
+                const voted = v.voted;
+                const selected1 = voted == 1 || voted == '1';
+                const selected2 = voted == 2 || voted == '2';
+                const check1 = selected1 ? '✔️ ' : '';
+                const check2 = selected2 ? '✔️ ' : '';
+                cardDiv.innerHTML = `
+                  <div class="vote-history-content">
+                    <div class="option ${selected1 ? 'selected' : ''}">${check1}${v.option1} (${v.votes1 || 0})</div>
+                    <div class="vs">VS</div>
+                    <div class="option ${selected2 ? 'selected' : ''}">${check2}${v.option2} (${v.votes2 || 0})</div>
+                  </div>
+                `;
+                list.appendChild(cardDiv);
+              });
+            });
+        });
+    }
+
+    // 모달 닫기
+    function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
+
+    // 투표하기 기능
+    function submitVote(postId, option) {
+      fetch(`/cards/${postId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ option: String(option) })
+      })
+        .then(res => { if (!res.ok) throw new Error("투표 실패"); return res.json(); })
+        .then(data => { fetchPosts(); loadPopularPost(); })
+        .catch(err => { alert('투표 처리 중 오류가 발생했습니다.'); });
+    }
+
+    // 좋아요 기능
+    function toggleLike(postId) {
+      fetch(`/cards/${postId}/like`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => { if (!res.ok) throw new Error("좋아요 실패"); return res.json(); })
+        .then(data => { fetchPosts(); loadPopularPost(); })
+        .catch(err => { alert('좋아요 처리 중 오류가 발생했습니다.'); });
+    }
+
+    // 댓글 등록(작성)
+    function submitComment(cardId) {
+      const token = localStorage.getItem('access_token');
+      const comment = document.getElementById(`comment-input-${cardId}`).value;
+      const isAnonBox = document.getElementById(`comment-anon-${cardId}`);
+      const isAnon = isAnonBox ? isAnonBox.checked : false;
+      if (!comment) { alert("댓글을 입력하세요."); return; }
+      fetch(`/cards/${cardId}/comment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ comment, is_anonymous: isAnon ? "1" : "0" })
+      })
+        .then(response => {
+          if (response.ok) {
+            document.getElementById(`comment-input-${cardId}`).value = '';
+            fetchComments(cardId);
+          } else {
+            return response.json().then(data => { throw new Error(data.msg || "댓글 등록 실패"); });
+          }
+        })
+        .catch(err => { alert(err.message); });
+    }
+
+    // 댓글 새로고침(전체 불러오기)
+    function fetchComments(cardId) {
+      fetch(`/cards/${cardId}/comments`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById(`comments-${cardId}`);
+          container.innerHTML = data.comments.map(c =>
+            `<p><strong>${c.is_anonymous ? '익명' : c.nickname}</strong>: ${c.content}</p>`
+          ).join('');
+        });
+    }
+
+    function deleteComment(cardId, commentId) {
+      if (!confirm('댓글을 삭제하시겠습니까?')) return;
+      fetch(`/cards/${cardId}/comment/${commentId}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('댓글 삭제 실패');
+          alert('댓글을 삭제했습니다.');
+          fetchComments(cardId);
+        })
+        .catch(err => alert(err.message));
+    }
+
+
+    // 인기 게시물 불러오기
+    function loadPopularPost() {
+      fetch('/popular-card', { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById('popular-container');
+          if (data.card) {
+            const post = data.card;
+            const profileImgSrc = `/profile_image/${post.writer_id}`;
+            container.innerHTML = `
+              <div class="popular-card">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                  <img src="${profileImgSrc}" alt="프로필" style="width: 40px; height: 40px; border-radius: 50%; cursor: pointer;" onclick="openProfileModal('${post.writer_id}')">
+                  <span style="cursor: pointer;" onclick="openProfileModal('${post.writer_id}')">${post.writer}</span>
+                </div>
+                <p><strong>${post.option1}</strong> VS <strong>${post.option2}</strong></p>
+                <div style="font-size: 12px; color: #666;">
+                  ① ${post.votes1} 표 | ② ${post.votes2} 표 | ❤️ ${post.likes} 좋아요
+                </div>
+              </div>
+            `;
+          } else {
+            container.innerHTML = '<p style="text-align: center; color: #666;">아직 인기 게시물이 없습니다.</p>';
+          }
+        });
+    }
+
+    // 로그아웃 기능
+    function logout() {
+      fetch('/logout').then(() => {
+        alert('로그아웃 성공!');
+        window.location.href = '/login';
+      });
+    }
+
+    // 게시글 삭제 (본인만)
+    function deletePost(postId) {
+      if (!confirm('정말 삭제하시겠습니까?')) return;
+      fetch(`/cards/${postId}/delete`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('삭제 실패');
+        alert('삭제했습니다.');
+        fetchPosts();
+      })
+      .catch(err => alert(err.message));
+    }
+
+    // 모달 바깥 클릭 시 닫기
+    window.onclick = function (event) {
+      const modal = document.getElementById('profileModal');
+      if (event.target === modal) { modal.style.display = 'none'; }
+    }
+
+    // 페이지 최초 로드 시 실행
+    document.addEventListener("DOMContentLoaded", function () {
+      loadCurrentUser();
+      loadPopularPost();
+    });
+
+  </script>
+</body>
+</html>
+
+

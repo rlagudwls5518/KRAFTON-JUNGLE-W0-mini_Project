@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>회원가입</title>
+  <style> 
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1e261d;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-box {
+      background: rgb(255, 255, 255);
+      padding: 50px;
+      border-radius: 10px;
+      width: 450px;
+      box-shadow: 0 0 10px rgba(11, 152, 46, 0.1);
+    }
+
+    .form-group {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      width: 100px;
+      text-align: right;
+      margin-right: 10px;
+    }
+
+    .form-group input {
+      width: 200px;
+      height: 35px;
+      font-size: 16px;
+      padding: 5px;
+    }
+
+    .form-group1 {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    #preview-box {
+      width: 150px;
+      height: 150px;
+      border: 2px solid #ccc;
+      margin: 10px auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      
+    }
+
+    #preview-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+    }
+
+    .new {
+      width: 100px;
+      height: 50px;
+      background: #398c15;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 20px;
+      float: right;
+    }
+    #oneline {
+  text-align: center;
+  font-size: 35px;
+  color: #555;
+  margin: 10px auto;
+  display: block;
+  width: 300px;
+}
+
+
+
+  </style>
+</head>
+<body>
+
+  <div class="login-box">
+    <h1>회원가입</h1>
+    <hr>
+
+    <form action="/signup" method="POST" enctype="multipart/form-data">
+      <!-- 프로필 업로드 -->
+      <div class="form-group1">
+        <label for="profile">프로필:</label>
+        <input type="file" id="profile" name="profile" accept="image/*" onchange="previewImage(event)">
+      </div>
+
+      <!-- 미리보기 박스 -->
+      <div id="preview-box">
+        <img id="preview-image" src="#" alt="미리보기" />
+      </div> 
+      <input type="text" id="oneline" name="intro" placeholder="한 줄 소개">
+
+      <!-- 기존 회원가입 입력창들 -->
+      <div class="form-group">
+        <label for="user-id">아이디:</label>
+        <input type="text" id="user-id" name="username" placeholder="아이디 입력">
+      </div>
+
+      <div class="form-group">
+        <label for="user-password1">비밀번호:</label>
+        <input type="password" id="user-password1" name="password" placeholder="비밀번호 입력">
+      </div>
+
+      <div class="form-group">
+        <label for="alias">별명:</label>
+        <input type="text" id="alias" name="nickname" placeholder="별명 입력">
+
+      </div>
+
+      <div class="form-group">
+        <label for="age">나이:</label>
+        <input type="number" id="age" name="age" placeholder="나이 입력">
+      </div>
+
+      <button type="submit" class="new">회원가입</button>
+    </form>
+  </div>
+
+  <script>
+    function previewImage(event) {
+      const input = event.target;
+      const preview = document.getElementById('preview-image');
+
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
